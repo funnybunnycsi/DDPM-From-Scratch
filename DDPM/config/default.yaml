@@ -1,14 +1,15 @@
 dataset_params:
-  im_path: "data/train/images"
+  train_path: "data/train/"
+  val_path: "data/test/"
 
 diffusion_params:
-  num_timesteps: 1000
-  beta_start: 0.0001
-  beta_end: 0.02
+  T: 1000
+  beta_1: 0.0001
+  beta_T: 0.02
 
 model_params:
-  im_channels: 1
-  im_size: 28
+  img_channels: 1
+  img_size: 28
   down_channels: [32, 64, 128, 256]
   mid_channels: [256, 256, 128]
   down_sample: [True, True, False]
@@ -21,8 +22,8 @@ model_params:
 train_params:
   task_name: "default"
   batch_size: 64
-  num_epochs: 40
+  epochs: 40
   num_samples: 100
   num_grid_rows: 10
   lr: 0.0001
-  ckpt_name: "ddpm_ckpt.pth"
+  ckpt_name: "ddpm_default_ckpt.pth"

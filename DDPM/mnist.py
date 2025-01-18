@@ -9,27 +9,21 @@ from typing import List, Tuple, Optional
 import os
 
 class MNIST(Dataset):
-    def __init__(self, im_path: str, im_ext: str = "png") -> None:
-        """
-        Args:
-            im_path: Path to image directory
-            im_ext: Image extension
-            img_size: Size to resize images to
-        """
-        self.im_ext = im_ext
-        self.images, self.labels = self.load_imgs(im_path)
+    def __init__(self, img_path: str, img_ext: str = "png") -> None:
+        self.img_ext = img_ext
+        self.images, self.labels = self.load_imgs(img_path)
         
-    def load_imgs(self, im_path: str) -> Tuple[List[str], List[int]]:
-        assert os.path.exists(im_path), f"Dataset path {im_path} doesn't exist"
+    def load_imgs(self, img_path: str) -> Tuple[List[str], List[int]]:
+        assert os.path.exists(img_path), f"Dataset path {img_path} doesn't exist"
 
         imgs = []
         labels = []
         try:
-            for directory in tqdm(os.listdir(im_path), desc=f"Loading data"):
-                dir_path = os.path.join(im_path, directory)
+            for directory in tqdm(os.listdir(img_path), desc=f"Loading data"):
+                dir_path = os.path.join(img_path, directory)
                 if os.path.isdir(dir_path):
                     for file in os.listdir(dir_path):
-                        if file.endswith(f'.{self.im_ext}'):
+                        if file.endswith(f'.{self.img_ext}'):
                             full_path = os.path.join(dir_path, file)
                             imgs.append(full_path)
                             labels.append(int(directory))
@@ -54,8 +48,8 @@ def test():
         test_path = "DDPM/data/test"
         
         try:
-            train_dataset = MNIST(im_path=train_path)
-            test_dataset = MNIST(im_path=test_path)
+            train_dataset = MNIST(img_path=train_path)
+            test_dataset = MNIST(img_path=test_path)
             
             print(f"Train dataset size: {len(train_dataset)}")
             print(f"Test dataset size: {len(test_dataset)}")
