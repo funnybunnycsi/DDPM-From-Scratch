@@ -31,7 +31,8 @@ class LinearNoiseScheduler:
     
     def sample_prev_timestep(self, xt, noise_pred, t):
         x0 = (xt - self.sqrt_1_minus_alpha_bars.to(xt.device)[t]*noise_pred)/self.sqrt_alpha_bars.to(xt.device)[t]
-        x0 = torch.clamp(x0,-1., 1.) # change to normalization in future as an experiment
+        #x0 = torch.clamp(x0,-1., 1.) # change to normalization in future as an experiment
+        x0 = torch.nn.functional.normalize(x0, dim=0)
 
         mean = (xt - ((self.betas[t].to(xt.device)*noise_pred)/self.sqrt_1_minus_alpha_bars.to(xt.device)[t])) / torch.sqrt(self.alphas.to(xt.device)[t])
 

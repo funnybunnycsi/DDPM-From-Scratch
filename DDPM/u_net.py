@@ -219,17 +219,20 @@ class UpBlock(nn.Module):
     
 
 class UNet(nn.Module):
-    def __init__(self, im_channels):
+    def __init__(self, cfg):
         super().__init__()
-        self.down_channels = [32, 64, 128, 256]
-        self.mid_channels = [256, 256, 128]
-        self.t_emb_dim = 128
-        self.num_down_layers = 2
-        self.num_mid_layers = 2
-        self.num_up_layers = 2
-        self.num_heads = 4
-        self.down_sample = [True, True, False]
-        self.up_sample = list(reversed(self.down_sample))
+        im_channels = cfg['im_channels']
+        self.down_channels = cfg['down_channels']
+        self.mid_channels = cfg['mid_channels']
+        self.t_emb_dim = cfg['time_emb_dim']
+        self.down_sample = cfg['down_sample']
+        self.num_down_layers = cfg['num_down_layers']
+        self.num_mid_layers = cfg['num_mid_layers']
+        self.num_up_layers = cfg['num_up_layers']
+        
+        assert self.mid_channels[0] == self.down_channels[-1]
+        assert self.mid_channels[-1] == self.down_channels[-2]
+        assert len(self.down_sample) == len(self.down_channels) - 1
 
         self.t_proj = nn.Sequential(
             nn.Linear(self.t_emb_dim, self.t_emb_dim),
@@ -279,4 +282,3 @@ class UNet(nn.Module):
         out = self.conv_out(out)
         
         return out
-
