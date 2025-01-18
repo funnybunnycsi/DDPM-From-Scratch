@@ -30,15 +30,15 @@ class LinearNoiseScheduler:
         return sqrt_alpha_bar*original + sqrt_1_minus_alpha_bar*noise
     
     def sample_prev_timestep(self, xt, noise_pred, t):
-        x0 = (xt - self.sqrt_1_minus_alpha_bars[t]*noise_pred)/self.sqrt_alpha_bars[t]
+        x0 = (xt - self.sqrt_1_minus_alpha_bars.to(xt.device)[t]*noise_pred)/self.sqrt_alpha_bars.to(xt.device)[t]
         x0 = torch.clamp(x0,-1., 1.) # change to normalization in future as an experiment
 
-        mean = (xt - ((self.betas[t]*noise_pred)/self.sqrt_1_minus_alpha_bars[t])) / torch.sqrt(self.alphas)
+        mean = (xt - ((self.betas[t].to(xt.device)*noise_pred)/self.sqrt_1_minus_alpha_bars.to(xt.device)[t])) / torch.sqrt(self.alphas.to(xt.device)[t])
 
         if t==0:
             return mean, x0
         else:
-            var = self.betas[t] * (1-self.alpha_bars[t-1]) / (1-self.alpha_bars[t])
+            var = self.betas.to(xt.device)[t] * (1-self.alpha_bars.to(xt.device)[t-1]) / (1-self.alpha_bars.to(xt.device)[t])
             sigma = var ** 0.5
             
             z = torch.randn(xt.shape).to(xt.device)
