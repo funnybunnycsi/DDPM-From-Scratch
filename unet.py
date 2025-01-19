@@ -62,14 +62,14 @@ class DownBlock(nn.Module):
         out = x
         for i in range(self.num_layers):
             resnet_input = out
-            out = self.resnet_conv_1[i](x)
+            out = self.resnet_conv_1[i](out)
             out = out + self.t_emb_layers[i](t_emb)[:, :, None, None]
             out = self.resnet_conv_2[i](out)
             out = out + self.residual_in_conv[i](resnet_input)
 
             batch_size, c, h, w = out.shape 
             in_attn = out.reshape(batch_size, c, h*w)
-            in_attn = self.attention_norm[i](in_attn)
+            in_attn = self.attn_norm[i](in_attn)
             in_attn = in_attn.transpose(1,2)
             out_attn, _ = self.attn[i](in_attn, in_attn, in_attn)
             out_attn = out_attn.transpose(1,2).reshape(batch_size, c, h, w)
@@ -86,7 +86,7 @@ class MidBlock(nn.Module):
 
         self.resnet_conv_1 = nn.ModuleList([
             nn.Sequential(
-                nn.GroupNorm(8, in_channels),
+                nn.GroupNorm(8, in_channels if i == 0 else out_channels),
                 nn.SiLU(),
                 nn.Conv2d(in_channels if i==0 else out_channels, out_channels, kernel_size=3, stride=1, padding=1),
             )
@@ -124,7 +124,7 @@ class MidBlock(nn.Module):
 
     def forward(self, x, t_emb):
         resnet_input = x
-        out = self.resnet_conv_1[0](out)
+        out = self.resnet_conv_1[0](x)
         out = out + self.t_emb_layers[0](t_emb)[:, :, None, None]
         out = self.resnet_conv_2[0](out)
         out = out + self.residual_in_conv[0](resnet_input)
@@ -197,24 +197,22 @@ class UpBlock(nn.Module):
         x = self.up_sample_conv(x)
         x = torch.cat([x, out_down], dim=1)
 
-        # add multiple layers in future
         out = x
         for i in range(self.num_layers):
             resnet_input = out
-            out = self.resnet_conv_1[i](x)
+            out = self.resnet_conv_1[i](out)
             out = out + self.t_emb_layers[i](t_emb)[:, :, None, None]
             out = self.resnet_conv_2[i](out)
             out = out + self.residual_in_conv[i](resnet_input)
 
             batch_size, c, h, w = out.shape 
             in_attn = out.reshape(batch_size, c, h*w)
-            in_attn = self.attention_norm[i](in_attn)
+            in_attn = self.attn_norm[i](in_attn)
             in_attn = in_attn.transpose(1,2)
             out_attn, _ = self.attn[i](in_attn, in_attn, in_attn)
             out_attn = out_attn.transpose(1,2).reshape(batch_size, c, h, w)
             out = out + out_attn
 
-        out = self.up_sample_conv(out)
         return out
     
 
@@ -229,6 +227,7 @@ class UNet(nn.Module):
         self.num_down_layers = cfg['num_down_layers']
         self.num_mid_layers = cfg['num_mid_layers']
         self.num_up_layers = cfg['num_up_layers']
+        self.num_heads = cfg["num_heads"]
         
         assert self.mid_channels[0] == self.down_channels[-1]
         assert self.mid_channels[-1] == self.down_channels[-2]
@@ -248,20 +247,23 @@ class UNet(nn.Module):
         
         self.mids = nn.ModuleList([])
         for i in range(len(self.mid_channels) - 1):
-            self.downs.append(MidBlock(self.mid_channels[i], self.mid_channels[i+1], self.t_emb_dim, num_heads=self.num_heads, num_layers=self.num_mid_layers))
+            self.mids.append(MidBlock(self.mid_channels[i], self.mid_channels[i+1], self.t_emb_dim, num_heads=self.num_heads, num_layers=self.num_mid_layers))
         
         self.ups = nn.ModuleList([])
         for i in reversed(range(len(self.down_channels) - 1)):
-            self.downs.append(UpBlock(self.down_channels[i]*2, self.down_channels[i-1] if i!=0 else 16, self.t_emb_dim, up_sample=self.down_sample[i], num_heads=self.num_heads, num_layers=self.num_up_layers))
+            self.ups.append(UpBlock(self.down_channels[i]*2, self.down_channels[i-1] if i!=0 else 16, self.t_emb_dim, up_sample=self.down_sample[i], num_heads=self.num_heads, num_layers=self.num_up_layers))
         
         self.norm_out = nn.GroupNorm(8, 16)
         self.conv_out = nn.Conv2d(16, img_channels, kernel_size=3, padding=1)
 
     def forward(self, x, t):
+        # batch_size, channels, height, width = x.shape
+        # assert channels == self.img_channels, f"Expected {self.img_channels} channels, got {channels}"
+        
         out = self.conv_in(x)
         t_emb = get_time_embedding(torch.as_tensor(t).long(), self.t_emb_dim)
         t_emb = self.t_proj(t_emb)
-
+        
         down_outs = []
         for down in self.downs:
             print(out.shape)

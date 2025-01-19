@@ -1,7 +1,7 @@
 import yaml
 import os
 import argparse
-import tqdm
+from tqdm import tqdm
 import numpy as np
 
 import torch
@@ -54,7 +54,8 @@ def train(args):
     for epoch in range(epochs):
         model.train()
         train_losses = []
-        for img in tqdm(train_loader):
+        for data in tqdm(train_loader):
+            img, _ = data
             img = img.float().to(device)
             noise = torch.randn_like(img).to(device)
             t = torch.randint(0, diffusion_config["T"], (img.shape[0],)).to(device)
@@ -73,7 +74,8 @@ def train(args):
             val_losses = []
             model.eval()
             with torch.inference_mode():
-                for img in val_dataset:
+                for data in val_dataset:
+                    img, _ = data
                     img = img.float().to(device)
                     noise = torch.randn_like(img).to(device)
                     t = torch.randint(0, diffusion_config["T"], (img.shape[0],)).to(device)
@@ -95,9 +97,9 @@ def train(args):
     
     print("Training Successful!")
 
-    if __name__ == "__main__":
-        parser = argparse.ArgumentParser(description="Training Arguments")
-        parser.add_argument("--config", dest="config_path", default="config/default.yaml", type=str)
-        parser.add_argument("--val", dest="val", default=False, type=bool)
-        args = parser.parse_args()
-        train(args)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Training Arguments")
+    parser.add_argument("--config", dest="config_path", default="config/default.yaml", type=str)
+    parser.add_argument("--val", dest="val", default=False, type=bool)
+    args = parser.parse_args()
+    train(args)

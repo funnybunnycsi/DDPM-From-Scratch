@@ -1,3 +1,4 @@
 venv
 misc.ipynb
 data
+__pycache__

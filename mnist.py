@@ -68,5 +68,5 @@ def test():
         except Exception as e:
             print(f"Test failed with error: {str(e)}")
 
-if __name__ == "__main__":
-    test()
+# if __name__ == "__main__":
+#     test()
