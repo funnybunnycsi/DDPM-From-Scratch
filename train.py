@@ -51,10 +51,10 @@ def train(args):
 
     mean_train_losses = []
     mean_val_losses = []
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs), desc='Epochs', position=0):
         model.train()
         train_losses = []
-        for data in tqdm(train_loader):
+        for data in tqdm(train_loader, desc=f'Training epoch {epoch+1}', position=1):
             img, _ = data
             img = img.float().to(device)
             noise = torch.randn_like(img).to(device)
@@ -66,15 +66,15 @@ def train(args):
             loss = loss_fn(noise_pred, noise)
             train_losses.append(loss.item())
             
-            loss.backward()
             optim.zero_grad()
+            loss.backward()
             optim.step()
 
         if args.val==True:
             val_losses = []
             model.eval()
             with torch.inference_mode():
-                for data in val_dataset:
+                for data in val_loader:
                     img, _ = data
                     img = img.float().to(device)
                     noise = torch.randn_like(img).to(device)
@@ -85,13 +85,13 @@ def train(args):
 
                     loss = loss_fn(noise_pred, noise)
                     val_losses.append(loss.item())
+            mean_val_losses.append(np.mean(val_losses))
 
         mean_train_losses.append(np.mean(train_losses))
-        mean_val_losses.append(np.mean(val_losses))
-        if args.val==True:
-            print(f"epoch: {epoch} | train loss: {np.mean(train_losses)} | val loss: {np.mean(val_losses)}")
+        if args.val:
+            tqdm.write(f"Epoch: {epoch} | Train Loss: {mean_train_losses[-1]:.6f} | Val Loss: {mean_val_losses[-1]:.6f}")
         else:
-            print(f"epoch: {epoch} | train loss: {np.mean(train_losses)}")
+            tqdm.write(f"Epoch: {epoch} | Train Loss: {mean_train_losses[-1]:.6f}")
 
         torch.save(model.state_dict(), os.path.join(train_config["task_name"], train_config["ckpt_name"]))
     
@@ -100,6 +100,6 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Training Arguments")
     parser.add_argument("--config", dest="config_path", default="config/default.yaml", type=str)
-    parser.add_argument("--val", dest="val", default=False, type=bool)
+    parser.add_argument("--val", dest="val", default=True, type=bool)
     args = parser.parse_args()
     train(args)

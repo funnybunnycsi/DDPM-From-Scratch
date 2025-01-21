@@ -19,6 +19,18 @@ def download_data():
         os.system(f'curl -O {url}')
     os.chdir("..")
 
+def cleanup_gz_files():
+    gz_files = [
+        'data/train-images-idx3-ubyte.gz',
+        'data/train-labels-idx1-ubyte.gz',
+        'data/t10k-images-idx3-ubyte.gz',
+        'data/t10k-labels-idx1-ubyte.gz'
+    ]
+    for file in gz_files:
+        if os.path.exists(file):
+            os.remove(file)
+            print(f"Removed: {file}")
+
 def extract_images(filename):
     with gzip.open(filename, 'rb') as f:
         data = np.frombuffer(f.read(), np.uint8, offset=16)
@@ -48,6 +60,7 @@ def main():
     test_images = extract_images('data/t10k-images-idx3-ubyte.gz')
     test_labels = extract_labels('data/t10k-labels-idx1-ubyte.gz')
     save_dataset(test_images, test_labels, 'test')
+    cleanup_gz_files()
 
 
 if __name__ == "__main__":

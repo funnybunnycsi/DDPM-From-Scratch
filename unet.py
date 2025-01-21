@@ -266,17 +266,17 @@ class UNet(nn.Module):
         
         down_outs = []
         for down in self.downs:
-            print(out.shape)
+            # print(out.shape)
             down_outs.append(out)
             out = down(out, t_emb)
 
         for mid in self.mids:
-            print(out.shape)
+            # print(out.shape)
             out = mid(out, t_emb)
 
         for up in self.ups:
             down_out = down_outs.pop()
-            print(out.shape, down_out.shape)
+            # print(out.shape, down_out.shape)
             out = up(out, down_out, t_emb)
         
         out = self.norm_out(out)

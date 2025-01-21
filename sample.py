@@ -2,18 +2,16 @@ import yaml
 import os
 import argparse
 import tqdm
-import numpy as np
+import random
 
 import torch
-from torch import nn
-from torch.optim import Adam
 from torchvision import transforms
-from torch.utils.data.dataloader import DataLoader
 from torchvision.utils import make_grid
 
-from linear_noise_scheduler import LinearNoiseScheduler
 from mnist import MNIST
+from linear_noise_scheduler import LinearNoiseScheduler
 from unet import UNet
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -28,6 +26,7 @@ def sample(model, args):
     diffusion_config = config['diffusion_params']
     model_config = config['model_params']
     train_config = config['train_params']
+    dataset_config = config["dataset_params"]
 
     model = UNet(model_config).to(device)
     model.load_state_dict(torch.load(os.path.join(train_config['task_name'], train_config['ckpt_name']),
@@ -39,10 +38,16 @@ def sample(model, args):
                                      beta_end=diffusion_config['beta_T'])
     
     with torch.inference_mode():
-        xt = torch.randn((train_config['num_samples'],
-                          model_config['img_channels'],
-                          model_config['img_size'],
-                          model_config['img_size'])).to(device)
+        if args.from_val==False:
+            xt = torch.randn((train_config['num_samples'],
+                            model_config['img_channels'],
+                            model_config['img_size'],
+                            model_config['img_size'])).to(device)
+        
+        else:
+            mnist = MNIST(img_path=dataset_config["val_path"])
+            rand_idx = random.randint(0, mnist.__len__())
+            xt = mnist.__getitem__(rand_idx).to(device)
         
         for t in tqdm(reversed(range(diffusion_config["T"]))):
             noise_pred = model(xt, torch.as_tensor(t).unsqueeze(dim=0).to(device))
@@ -60,7 +65,7 @@ def sample(model, args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='DDPM image generation arguments')
-    parser.add_argument('--config', dest='config_path',
-                        default='config/default.yaml', type=str)
+    parser.add_argument('--config', dest='config_path',default='config/default.yaml', type=str)
+    parser.add_argument('--from_val', dest='from_val',default=False, type=bool)
     args = parser.parse_args()
     sample(args)
