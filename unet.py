@@ -62,7 +62,7 @@ class DownBlock(nn.Module):
         out = x
         for i in range(self.num_layers):
             resnet_input = out
-            out = self.resnet_conv_1[i](out)
+            out = self.resnet_conv_1[i](out) 
             out = out + self.t_emb_layers[i](t_emb)[:, :, None, None]
             out = self.resnet_conv_2[i](out)
             out = out + self.residual_in_conv[i](resnet_input)
@@ -239,7 +239,7 @@ class UNet(nn.Module):
             nn.Linear(self.t_emb_dim, self.t_emb_dim)
         )
 
-        self.conv_in = nn.Conv2d(img_channels, self.down_channels[0], kernel_size=3, padding=1)
+        self.conv_in = nn.Conv2d(img_channels, self.down_channels[0], kernel_size=3, padding=(1,1))
         
         self.downs = nn.ModuleList([])
         for i in range(len(self.down_channels) - 1):
