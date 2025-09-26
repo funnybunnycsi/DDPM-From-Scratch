@@ -66,6 +66,7 @@ Generate new images using the trained model:
 ```bash
 python sample.py --config config/default.yaml --from_val False
 ```
+asfdsdf
 
 ## Blog Post
 
